@@ -9,8 +9,11 @@ private:
 
 	std::vector<int> attributedColors;
 	std::vector<std::vector<int>> possibleSolutions;
+	std::vector<std::vector<int>> evaluations;
+	std::vector<std::vector<int>> solutions;
 	int colorNumber;
 	int spotNumber;
+	bool running = true;
 
 public:
 
@@ -19,10 +22,18 @@ public:
 
 	inline std::vector<int> getAttributedColors()					const{return this->attributedColors;}
 	inline std::vector<std::vector<int>> getPossibleSolutions()		const{return this->possibleSolutions;}	
+	inline std::vector<std::vector<int>> getEvaluations()			const{return this->evaluations;}
+	inline std::vector<std::vector<int>> getSolutions()				const{return this->solutions;}	
+	inline bool getRunning()										const{return this->running;}		
+
 
 	void generateSolutions();
 	void printAttributedColors();
 	std::vector<int> getPlausibleSolution(bool);
+	bool isPlausible(std::vector<int>, std::vector<int>, std::vector<int>);
+	void addEvaluation(std::vector<int>);
+	void addSolution(std::vector<int>);
+	std::vector<int> createStopSolution();
 
 };
 

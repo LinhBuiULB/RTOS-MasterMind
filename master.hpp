@@ -10,6 +10,7 @@ private:
 	std::vector<int> solution;
 	int colorNumber;
 	int spotNumber;
+	bool isNotOver = true;
 
 public:
 
@@ -18,9 +19,11 @@ public:
 
 	void buildSolution();
 	void printSolution();
+	std::vector<int> evaluate(std::vector<int>);
 
 	inline std::vector<int> getSolution() 	const{return this->solution;}
 	inline int getColorNumber()				const{return this->colorNumber;}
+	inline bool getIsNotOver()				const{return this->isNotOver;}
 
 };
 
