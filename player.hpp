@@ -14,6 +14,7 @@ private:
 	int colorNumber;
 	int spotNumber;
 	bool running = true;
+	int currentPos = 0;
 
 public:
 

@@ -17,8 +17,8 @@ int main(int argc, char **argv) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-	int colorNumber = 9;
-	int numberSpots = 5;
+	int colorNumber = 6;
+	int numberSpots = 4;
 	std::vector<int> evaluation; //Evaluation of the master computed from a solution sent by a node
 	int* sendArray;
 
@@ -44,7 +44,6 @@ int main(int argc, char **argv) {
 		*/
 
 		while(master->getIsNotOver()){
-
 
 			MPI_Gather(sendArray, numberSpots, MPI_INT, solutionArray, numberSpots, MPI_INT, 0, MPI_COMM_WORLD); 
 

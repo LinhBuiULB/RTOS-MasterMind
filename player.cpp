@@ -100,33 +100,36 @@ std::vector<int> Player::getPlausibleSolution(bool isBegin){
 		return this->possibleSolutions[0];
 	}
 
-	std::vector<std::vector<int>>::iterator it;
-	std::vector<int> evaluatedSolution;
-	std::vector<int> evaluation;
-	bool isPlausible;
+	if(this->running){
 
-	for (it = this->possibleSolutions.begin(); it != this->possibleSolutions.end(); it++){
-		//Iterate on each possible solutions
-		isPlausible = true;
+		std::vector<std::vector<int>>::iterator it;
+		std::vector<int> evaluatedSolution;
+		std::vector<int> evaluation;
+		bool isPlausible;
 
-		for(int i = 0; i < this->evaluations.size(); i++){
-			//Iterate on all previous evaluations
-			evaluatedSolution = this->solutions[i];
-			evaluation = this->evaluations[i];
+		for (it = this->possibleSolutions.begin() + this->currentPos; it != this->possibleSolutions.end(); it++){
+			//Iterate on each possible solutions
+			isPlausible = true;
 
-			if(!this->isPlausible(*it, evaluatedSolution, evaluation)){
-				//If the solution contradict one of the evaluation, it is not plausible
-				isPlausible = false;
-				break;
+			for(int i = 0; i < this->evaluations.size(); i++){
+				//Iterate on all previous evaluations
+				evaluatedSolution = this->solutions[i];
+				evaluation = this->evaluations[i];
+
+				if(!this->isPlausible(*it, evaluatedSolution, evaluation)){
+					//If the solution contradict one of the evaluation, it is not plausible
+					isPlausible = false;
+					this->currentPos++;
+					break;
+				}
 			}
-		}
+			if(isPlausible){
+				return *it;
+			}
 
-		if(isPlausible){
-			return *it;
 		}
-
+		this->running = false;
 	}
-	this->running = false;
 	return this->createStopSolution();
 }
 
