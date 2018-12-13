@@ -1,0 +1,288 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[pdftex]{graphicx}
+\usepackage[left=3cm,right=3cm,top=3cm,bottom=3cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[francais,english]{babel}
+\newcommand*{\escape}[1]{\texttt{\textbackslash#1}}
+\frenchbsetup{StandardLists=true}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage{listings}
+
+%ALGORITHM
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\renewcommand{\algorithmicforall}{\textbf{for each}}
+\newcommand{\var}[1]{\mathit{#1}}
+\newcommand{\func}[1]{\mathrm{#1}}
+\algdef{SE}[DOWHILE]{Do}{doWhile}{\algorithmicdo}[1]{\algorithmicwhile\ #1}
+%
+
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{makecell}
+\newcommand{\algorithmautorefname}{Algorithm}
+
+\usepackage{graphicx}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+
+
+\title{[INFO-F404] Real-Time Operating Systems \\ MasterMind - Project report}
+\author{\bsc{BUI QUANG PHUONG} Linh - ULB ID : 000427796 \\ \bsc{PAQUET} Michael - ULB ID : 000410753 \\ \bsc{SINGH} Sundeep - ULB ID : 000428022 \\ MA1 Computer Sciences}
+\date{December 2018}
+
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction}
+The goal of this project is to implement the \textit{MasterMind} game using a parallel solver. To do this, we will use the interface MPI on HYDRA cluster. This parallel solver implementation will help to prove the quickness of parallelism.  
+
+\section{Pseudo-code and implementation choices}
+
+\subsection{Code structure}
+For this project three main files are used :
+\begin{enumerate}
+   \item {\fontfamily{lmtt}\selectfont master.cpp}
+    \item {\fontfamily{lmtt}\selectfont player.cpp}
+    \item {\fontfamily{lmtt}\selectfont mastermind.cpp}
+\end{enumerate}
+
+\subsubsection{The master entity}
+The {\fontfamily{lmtt}\selectfont master.cpp} is the entity representing the master in the game. Its main purpose is to create a solution, print it and evaluate the solution given by a player.
+
+\begin{itemize}
+    \item {\fontfamily{lmtt}\selectfont void Master::buildSolution()}: build the solution given the number of spots and number of colours
+    \item {\fontfamily{lmtt}\selectfont void Master::printSolution()}: display the solution created randomly
+    \item {\fontfamily{lmtt}\selectfont vector<int> Master::evaluate(vector<int> solution)}: take a vector of integers as a parameter which will be the solution of a player and will evaluate it
+\end{itemize}
+
+\subsubsection{The player entity}
+The {\fontfamily{lmtt}\selectfont player.cpp} is the entity representing the player in the game. The player will create a set of possible solutions and send them to the master for an evaluation.
+
+\begin{itemize}
+    \item {\fontfamily{lmtt}\selectfont void Player::generateSolutions()}: generate the possible solutions of a player. It will choose a colour whom will be the first colour for every solution created by the player then it will create a subset of colour by considering the number of spots and colours available. Once a subset is created, the player will do all the permutation possible on that subset to create all the solution possible. Finally it will create a new subset and it will do it all over again until there is no more possible solution possible given his first choice of colour.
+    
+    \item {\fontfamily{lmtt}\selectfont bool Player::isPlausible(vector<int> solution, vector<int> evaluatedSolution, \\ vector<int> evaluation)} : will check if one solution of the player is possible given an evalution of another player. Let $x$ be the number of \textit{perfect} and $y$ the number of \textit{color only} then a solution is plausible regarding an evaluation if and only if it matches $(x+y)$ colors in the evaluation including $x$ times perfectly.
+    
+    \item {\fontfamily{lmtt}\selectfont vector<int> Player::createStopSolution()}: sends a fake solution constituted of zeros to the master to indicate him that the player doesn't play anymore
+
+\end{itemize}
+
+\subsubsection{The MasterMind entity}
+The mastermind is the entity that will handle the running of the game. It will make a distinction between the master and the players due to their rank. Moreover, the master will listen for the possible solutions of the players, evaluate them and diffuse the result of the evaluation to all the players so that everyone can send another plausible solution. Consequently the player here will be sending a solution and waiting for a response of the master which will be the evaluation
+
+\subsection{Pseudo-code}
+
+\subsubsection{{\fontfamily{lmtt}\selectfont mastermind.cpp}}
+The main file {\fontfamily{lmtt}\selectfont mastermind.cpp} is implemented following the pseudo-code presented below. 
+
+\begin{algorithm}[H] 
+  \caption{MasterMind implementation} 
+  \begin{algorithmic}[1]
+  \Procedure{MasterMind}{}
+  \State Initialization of MPI
+  
+  \If {is Master case} 
+  \State Generate a solution of $w$ number of spots from $z$ colors 
+  \While {a player doesn't find the solution}
+  \State Gather the solutions received from the players 
+  \ForAll {solutions received}
+  \State print it and determines if it's a legit solution
+  \EndFor 
+   \State Pick a legit solution in the $solutions$ list 
+  \State Evaluate the solution picked 
+  \State Broadcast the evaluation of the solution and the evaluated solution \\
+  \EndWhile
+  
+  \ElsIf {is Player case}
+  \ForAll{color $j$ in the set of colors $w$}
+  \State Attribute the color $j$ to a Player 
+  \EndFor 
+   
+  \State Generate all possible solutions of the current Player
+  \While{the Player doesn't find the solution of Master}
+  \State Find a plausible solution
+  \State Send the plausible solution to the master (Gather) 
+  \State Receive the evaluated solution from the master (Broadcasted by Master) 
+  \State Receive the evaluation from the master (Broadcasted by Master)
+  \EndWhile
+  
+  \EndIf
+  
+  \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{{\fontfamily{lmtt}\selectfont master.cpp}}
+
+The {\fontfamily{lmtt}\selectfont master.cpp} file is composed by two main methods : {\fontfamily{lmtt}\selectfont buildSolution} and {\fontfamily{lmtt}\selectfont evaluate} respectively building a solution of a size corresponding to the number of spots chosen from the colors list and evaluating a solution given by a Player. {\fontfamily{lmtt}\selectfont buildSolution} is represented by the pseudo-code in \autoref{alg:build-sol} and {\fontfamily{lmtt}\selectfont buildSolution} is represented by the pseudo-code in \autoref{alg:evaluate}. 
+
+\begin{algorithm}[H] 
+  \caption{Building a solution of $z$ spots from the $w$ colors} \label{alg:build-sol}
+  \begin{algorithmic}[1]
+  \Procedure{BuildSolution}{}
+  \ForAll{spot}
+  \State Pick a random color from the $w$ colors
+  \State Check that this color is not already in the generated solution
+  \State Add the color to the solution
+  \EndFor
+  \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H] 
+  \caption{Evalation of a solution} \label{alg:evaluate}
+  \begin{algorithmic}[1]
+  \Procedure{Evaluate}{solution}
+  \ForAll{spot of the solution given}
+    \If{color found in both the solution given and the true solution at this spot}
+    \State Increment the number of $perfect$ 
+    \ElsIf {color found but not in the good position}
+    \State Increment the number of $colorOnly$
+    \EndIf
+  \EndFor
+  \If{perfect number = spots number}
+  \State solution found $\rightarrow$ set gameNotOver value to false
+  \EndIf
+  \State \textbf{return} the number of perfects and color only 
+  \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{{\fontfamily{lmtt}\selectfont player.cpp}}
+
+The {\fontfamily{lmtt}\selectfont player.cpp} file is composed by the methods {\fontfamily{lmtt}\selectfont generateSolutions}, {\fontfamily{lmtt}\selectfont isPlausible} and \\ {\fontfamily{lmtt}\selectfont getPlausibleSolutions}. The first one is generating all the possible solutions starting from a certain color while the two following are checking if a solution is plausible from the evaluation returned by the Master and are getting all the plausible ones.    
+
+\begin{algorithm}[H] 
+  \caption{Generation of the solutions} 
+  \begin{algorithmic}[1]
+  \Procedure{generateSolutions}{}
+  \State Initialization of the vectors $color$, $solution$, $it$and $it2$  
+  \ForAll {colors attributed}
+  \State Create all subset without that color
+  \ForAll{subset}
+  \State Compute all permutation of the subset
+  \State Add all computed permutation
+  \EndFor
+  \ForAll{subsets added}
+  \State  Add own color in first position of subset
+  \EndFor
+  \EndFor
+  \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H] 
+  \caption{Get the plausible solutions} 
+  \begin{algorithmic}[1]
+  \Procedure{getPlausibleSolution}{bool isBegin}
+  \If{sending first plausible solution}
+  \State send first solution of all the plausible solutions
+  \EndIf
+  \ForAll{possible solutions}
+  \ForAll{evaluations sent by the master}
+  \If{current solution is not plausible given the evaluation}
+  \State set this solution has not plausible
+   \EndIf
+  \EndFor
+   \If{the solution is plausible}
+  \State return the solution
+  \EndIf
+  \EndFor
+  \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+
+\begin{algorithm}[H] 
+  \caption{Verify if a solution is plausible} 
+  \begin{algorithmic}[1]
+  \Procedure{isPlausible}{solution, evaluatedSolution, evaluation}
+ \State $x$ equals the number of perfect matches of the evaluated solution
+  \State $y$ equals the number of colors only of the evaluated solution
+  \ForAll{element of our plausible solution}
+  \ForAll{element of the evaluation sent by the master}
+  \If{an element of the plausible solution matches an element of the evaluation }
+  \State Increment the number of matches
+  \EndIf
+  \If{position of the elements are the same}
+  \State Increment the number of perfect matches
+  \EndIf
+  \EndFor
+  \EndFor
+  \If{number of matches equals to $(x+y)$ and the number of perfects equals to $x$}
+  \State set the solution as plausible
+  \EndIf
+  \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+
+
+
+\section{Protocol description}
+
+There are two communications between the master and the player (represented by nodes). \\
+The master can either receive solutions from the nodes or send to the nodes the evaluation of a solution. On the other hand, it should not be necessary to say that a node can either send a solution to the master or receive an evaluation from him.\\
+Here is how we implemented it in order to do so : 
+
+\begin{itemize}
+    \item Receiving a solution from all processes (all nodes) can be interpreted as multiple receive on master's side and a send from each node on player's side, which is exactly the definition of the \textit{MPI\_Gather} function. To implement such communication, we then call that function on both side, specifying what to send/receive, who will receive, and other useful parameters. 
+    
+    \item Sending information from a process (the master) to all other processes (the nodes) can be interpreted as multiple sends master's side and a single receive player's side which is exactly the definition of the \textit{MPI\_Bcast} function. We then call it on both side in order to send the evaluated solution with it's evaluation to all nodes. 
+\end{itemize}
+
+\noindent To resume the protocol : first, all nodes compute a plausible solution while the master is blocking on the \textit{Gather} function waiting for a solution from all nodes. Once computed, each node call the \textit{Gather} function to send their solution.\\
+Now that the master gathered all solutions, he can compute the evaluation of a randomly chosen one while the nodes are blocking on a \textit{Bcast} function. \\
+Once the evaluation computed, the master broadcasts it to each node so that they can again find another plausible solution and so on.
+
+
+
+\section{Performance description}
+
+Let \textit{x} be the number of all possible guesses and \textit{p}  the number of processes. \\
+Evaluating a solution on master's side can be considered as constant in term of computation time. 
+The two variables are the number of guesses to be generated by each node and the number of solution we need to get through before reaching the good solution.\\
+Without parallelism : 
+\begin{itemize}
+    \item We would generate \textit{x} possible guesses.
+    \item We would at most get through \textit{x} possible guesses before finding the good one.
+\end{itemize}
+With parallelism : 
+\begin{itemize}
+    \item Each node generates $\frac{x}{p}$ possible guesses.
+    \item We at most get through $\frac{x}{p}$ guesses before reaching the solution.
+\end{itemize}
+
+\noindent It has to be said that, currently,  in some case, parallelism could not be worth. \\ Indeed, let \textit{Node 1} have the guesses <0,...,n> and let \textit{Node 2} have the guesses <n+1,...,x> and \textit{n} be the solution of the game. \\
+When looking for a plausible solution, if \textit{Node 1} finds \textit{0} and \textit{Node 2} only finds \textit{x}, then \textit{Node 1} have to wait in its call to the Broadcast function \textit{Node 2} to get through all its possible guesses. At next round, \textit{Node 1} then have to get through all its guesses to find out that n is the good solution. \\
+In this case, we then got through all possible guesses instead of only n in case of non-parallelism. A way to make parallelism worth in any case would be to still get through guesses while waiting the other nodes in the Broadcast.
+
+\section{Calculation of the formula of possible guesses}
+% a formula giving the number of possible guesses at start depending on the number of spot and colours,
+
+Let \textit{n} be the number of colors and \textit{k} the number of spots. The number of subsets of \textit{k} elements in \textit{n} is defined as $$C_{k}^{n} =  \binom{n}{k} = \frac{n!}{k!(n-k)!}$$
+\noindent For each subset, we permute it in order to have all possible guesses. The number of guesses given by the permutation of a subset of size $k$ is $k!$.\\
+Then, the final formula to calculate the number of possible guesses is : $$k!\ C_{k}^{n} =k! \binom{n}{k} = k! \frac{n!}{k!(n-k)!} = \frac{n!}{(n-k)!} = A_{k}^{n}$$
+
+
+\section{Difficulties encountered}
+
+Two problems were encountered during the implementation of the project : 
+\begin{itemize}
+    \item The first one was to correctly set up the communication between player and master. Indeed, we never had to use functions such as \textit{MPI\_Gather} for example, therefore it was at first hard to see how to make it work properly. An explanation on how we made it can be found in the Protocol description section.
+    \item The second problem, which is still remaining, is the fact that when a node has no more plausible solution, he must stop running and inform it to the master so that he does not wait for a message from that node anymore. As just said, this problem is still remaining but here is how we currently deal with it : once a node finds out he has no more plausible solution, he will keep running but always sending a "fake" solution which the master will understand as "Do not evaluate this". 
+\end{itemize}
+
+\end{document}
