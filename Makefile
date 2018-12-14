@@ -1,5 +1,5 @@
 all:
-	mpiCC player.cpp master.cpp mastermind.cpp -o jeu
+	mpiCC player.cpp master.cpp mastermind.cpp -o game
 
 test:
-	mpirun -np 5 ./jeu 
+	mpirun -q -np 8 ./game

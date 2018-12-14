@@ -44,12 +44,12 @@ void Master::printSolution(){
 	*/
 
 	int index;
-	printf("The solution is ");
+	printf("----------\nThe solution is ");
 	std::vector<int>::iterator it;
 	for(it = this->solution.begin(); it != this->solution.end(); it++){
 		printf("%d ", *it);
 	}
-	printf("\n");
+	printf("\n----------\n");
 }
 
 

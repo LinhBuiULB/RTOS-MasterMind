@@ -17,10 +17,16 @@ int main(int argc, char **argv) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-	int colorNumber = 6;
-	int numberSpots = 4;
+	int colorNumber = 10;	//MODIFY HERE THE NUMBER OF COLORS
+	int numberSpots = 4;	//MODIFY HERE THE NUMBER OF SPOTS
+
 	std::vector<int> evaluation; //Evaluation of the master computed from a solution sent by a node
 	int* sendArray;
+
+	if(size > colorNumber) {
+		printf("Error : The number of processes must not be greater than the number of colors.\n");
+		return 0;
+	}
 
 	if(rank == 0){
 		/*
@@ -42,8 +48,10 @@ int main(int argc, char **argv) {
 		* A stopSolution is <0,0,...,0> and means that the node who sent this solution 
 		* has no more plausible solution and must stop running 
 		*/
-
+		int counter = 0;
 		while(master->getIsNotOver()){
+			counter++;
+			printf("\n\nROUND %d : \n", counter);
 
 			MPI_Gather(sendArray, numberSpots, MPI_INT, solutionArray, numberSpots, MPI_INT, 0, MPI_COMM_WORLD); 
 
@@ -58,7 +66,7 @@ int main(int argc, char **argv) {
 	   			}
 	   		}
 
-	   		printf("Received : ");
+	   		printf("Master Received : ");
 	   		for(std::vector<std::vector<int>>::iterator it2 = solutions.begin(); it2 != solutions.end(); it2++){
 	   			//Print the solutions received and determine wheter ot not they are of the form <0,0,...,0>
 	   			legit = false;
@@ -81,7 +89,7 @@ int main(int argc, char **argv) {
 
 	   		std::vector<int> &chosenSolution = solutions[randomIndex];
 
-	   		printf("Evaluating the solution : ");
+	   		printf("Master is evaluating the solution : ");
 	   		for(std::vector<int>::iterator it = chosenSolution.begin(); it != chosenSolution.end(); it++){
 	   			printf("%d ", *it);
 	   		}
@@ -99,7 +107,7 @@ int main(int argc, char **argv) {
 			solutions.clear();
 			legitSol.clear();
 		}
-		printf("SOLUTION FOUND, EXIT PROGRAM\n");
+		printf("\n------------\nSOLUTION FOUND, EXIT PROGRAM\n------------\n");
 		MPI_Finalize();
 
 	}
@@ -133,7 +141,7 @@ int main(int argc, char **argv) {
 
 			sendArray = &nodeSolution[0];
 			//Send the plausible solution to the master
-			MPI_Gather(sendArray, numberSpots, MPI_INT, NULL, NULL, MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Gather(sendArray, numberSpots, MPI_INT, NULL, 0, MPI_INT, 0, MPI_COMM_WORLD);
 
 			//Receive the evaluated solution from the master
 			MPI_Bcast(recvSol, numberSpots, MPI_INT, 0, MPI_COMM_WORLD);
@@ -151,8 +159,6 @@ int main(int argc, char **argv) {
 			nodeSolution = player->getPlausibleSolution(false);
 
 		}
-		//sendArray = &nodeSolution[0];
-		//MPI_Gather(sendArray, numberSpots, MPI_INT, NULL, NULL, MPI_INT, 0, MPI_COMM_WORLD);
 
 		printf("Node %d shutting down\n", rank);
 		MPI_Finalize();

@@ -177,7 +177,6 @@ bool Player::isPlausible(std::vector<int> solution, std::vector<int> evaluatedSo
 		 isPlausible = true;
 
 	return isPlausible;
-
 }
 
 void Player::addEvaluation(std::vector<int> evaluation){
